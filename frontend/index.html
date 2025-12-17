@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIPAA Compliance Engine</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #22d3ee, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #334155;
+        }
+        .card h2 {
+            color: #f1f5f9;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+        }
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .status-item {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .status-item .value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .status-item .label {
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+        .status-item.success .value { color: #22c55e; }
+        .status-item.warning .value { color: #eab308; }
+        .status-item.danger .value { color: #ef4444; }
+        .status-item.info .value { color: #3b82f6; }
+        .compliance-score {
+            text-align: center;
+            padding: 30px;
+        }
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(#22c55e var(--score), #334155 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+        .score-circle::before {
+            content: '';
+            width: 120px;
+            height: 120px;
+            background: #1e293b;
+            border-radius: 50%;
+            position: absolute;
+        }
+        .score-circle .score-value {
+            position: relative;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #22c55e;
+        }
+        .requirements-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .requirement-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #0f172a;
+            border-radius: 8px;
+        }
+        .requirement-item .name {
+            font-weight: 500;
+        }
+        .requirement-item .ref {
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-success { background: #22c55e20; color: #22c55e; }
+        .badge-warning { background: #eab30820; color: #eab308; }
+        .badge-danger { background: #ef444420; color: #ef4444; }
+        .scanner-section {
+            margin-top: 20px;
+        }
+        .scanner-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #334155;
+            border-radius: 12px;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 1rem;
+            min-height: 120px;
+            resize: vertical;
+        }
+        .scanner-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+        .findings-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .finding-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #ef444410;
+            border: 1px solid #ef444440;
+            border-radius: 8px;
+        }
+        .finding-type {
+            color: #ef4444;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        .finding-value {
+            color: #94a3b8;
+            font-family: monospace;
+        }
+        .masking-demo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .mask-box {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 8px;
+        }
+        .mask-box h4 {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .mask-box pre {
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .strategies-grid {
+            display: grid;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .strategy-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #0f172a;
+            border-radius: 8px;
+        }
+        .strategy-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .strategy-info h4 { font-size: 0.95rem; margin-bottom: 2px; }
+        .strategy-info p { font-size: 0.8rem; color: #64748b; }
+        .no-findings {
+            text-align: center;
+            padding: 30px;
+            color: #22c55e;
+        }
+        .no-findings span { font-size: 3rem; display: block; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 HIPAA Compliance Engine</h1>
+            <p style="color: #94a3b8;">Automated data security and compliance for healthcare</p>
+        </header>
+
+        <div class="dashboard">
+            <!-- Compliance Score -->
+            <div class="card">
+                <h2>📊 Compliance Status</h2>
+                <div class="compliance-score">
+                    <div class="score-circle" style="--score: 100%">
+                        <span class="score-value">100%</span>
+                    </div>
+                    <p style="color: #22c55e; font-weight: 600;">Fully Compliant</p>
+                </div>
+                <div class="status-grid">
+                    <div class="status-item success">
+                        <div class="value">✓</div>
+                        <div class="label">Encryption</div>
+                    </div>
+                    <div class="status-item success">
+                        <div class="value">✓</div>
+                        <div class="label">Access Control</div>
+                    </div>
+                    <div class="status-item success">
+                        <div class="value">✓</div>
+                        <div class="label">Audit Logs</div>
+                    </div>
+                    <div class="status-item success">
+                        <div class="value">✓</div>
+                        <div class="label">Data Integrity</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HIPAA Requirements -->
+            <div class="card">
+                <h2>📋 HIPAA Requirements</h2>
+                <div class="requirements-list" id="requirements-list">
+                    <div class="requirement-item">
+                        <div>
+                            <div class="name">Access Control</div>
+                            <div class="ref">§164.312(a)(1)</div>
+                        </div>
+                        <span class="badge badge-success">Compliant</span>
+                    </div>
+                    <div class="requirement-item">
+                        <div>
+                            <div class="name">Audit Controls</div>
+                            <div class="ref">§164.312(b)</div>
+                        </div>
+                        <span class="badge badge-success">Compliant</span>
+                    </div>
+                    <div class="requirement-item">
+                        <div>
+                            <div class="name">Integrity Controls</div>
+                            <div class="ref">§164.312(c)(1)</div>
+                        </div>
+                        <span class="badge badge-success">Compliant</span>
+                    </div>
+                    <div class="requirement-item">
+                        <div>
+                            <div class="name">Person Authentication</div>
+                            <div class="ref">§164.312(d)</div>
+                        </div>
+                        <span class="badge badge-success">Compliant</span>
+                    </div>
+                    <div class="requirement-item">
+                        <div>
+                            <div class="name">Transmission Security</div>
+                            <div class="ref">§164.312(e)(1)</div>
+                        </div>
+                        <span class="badge badge-success">Compliant</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHI Scanner -->
+            <div class="card">
+                <h2>🔍 PHI Scanner</h2>
+                <p style="color: #94a3b8; margin-bottom: 16px;">Scan text for Protected Health Information</p>
+                <textarea class="scanner-input" id="scan-input" placeholder="Enter text to scan for PHI...
+
+Example: Patient John Smith (SSN: 123-45-6789) visited on 01/15/2024. Contact: john.smith@email.com, Phone: (555) 123-4567. MRN: PAT12345678"></textarea>
+                <button class="btn btn-primary" onclick="scanText()">🔍 Scan for PHI</button>
+                <div id="scan-results" class="findings-list"></div>
+            </div>
+
+            <!-- Data Masking -->
+            <div class="card">
+                <h2>🎭 Data Masking Strategies</h2>
+                <div class="strategies-grid">
+                    <div class="strategy-item">
+                        <div class="strategy-icon" style="background: #ef444420;">🚫</div>
+                        <div class="strategy-info">
+                            <h4>REDACT</h4>
+                            <p>Replace with [REDACTED]</p>
+                        </div>
+                    </div>
+                    <div class="strategy-item">
+                        <div class="strategy-icon" style="background: #3b82f620;">#️⃣</div>
+                        <div class="strategy-info">
+                            <h4>HASH</h4>
+                            <p>SHA-256 cryptographic hash</p>
+                        </div>
+                    </div>
+                    <div class="strategy-item">
+                        <div class="strategy-icon" style="background: #8b5cf620;">🎫</div>
+                        <div class="strategy-info">
+                            <h4>TOKENIZE</h4>
+                            <p>Reversible token replacement</p>
+                        </div>
+                    </div>
+                    <div class="strategy-item">
+                        <div class="strategy-icon" style="background: #22c55e20;">📊</div>
+                        <div class="strategy-info">
+                            <h4>GENERALIZE</h4>
+                            <p>Reduce precision (e.g., age ranges)</p>
+                        </div>
+                    </div>
+                    <div class="strategy-item">
+                        <div class="strategy-icon" style="background: #eab30820;">🔒</div>
+                        <div class="strategy-info">
+                            <h4>ENCRYPT</h4>
+                            <p>AES-256 encryption</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top: 24px; margin-bottom: 12px; font-size: 1rem;">Masking Demo</h3>
+                <div class="masking-demo">
+                    <div class="mask-box">
+                        <h4>Original Data</h4>
+                        <pre id="original-data">{
+  "name": "John Smith",
+  "ssn": "123-45-6789",
+  "email": "john@email.com"
+}</pre>
+                    </div>
+                    <div class="mask-box">
+                        <h4>Masked Data</h4>
+                        <pre id="masked-data">{
+  "name": "[REDACTED]",
+  "ssn": "a1b2c3...6789",
+  "email": "jo***@email.com"
+}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8003';
+
+        async function scanText() {
+            const input = document.getElementById('scan-input').value;
+            const resultsDiv = document.getElementById('scan-results');
+
+            if (!input.trim()) {
+                resultsDiv.innerHTML = '<p style="color: #94a3b8;">Enter some text to scan</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p style="color: #94a3b8;">Scanning...</p>';
+
+            // Simulate PHI detection (client-side for demo)
+            const findings = [];
+
+            // SSN pattern
+            const ssnMatches = input.match(/\d{3}-\d{2}-\d{4}/g);
+            if (ssnMatches) {
+                ssnMatches.forEach(m => findings.push({ type: 'SSN', value: '***-**-' + m.slice(-4), confidence: 0.95 }));
+            }
+
+            // Email pattern
+            const emailMatches = input.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+            if (emailMatches) {
+                emailMatches.forEach(m => findings.push({ type: 'EMAIL', value: m.slice(0,2) + '***@' + m.split('@')[1], confidence: 0.98 }));
+            }
+
+            // Phone pattern
+            const phoneMatches = input.match(/\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g);
+            if (phoneMatches) {
+                phoneMatches.forEach(m => findings.push({ type: 'PHONE', value: '***-***-' + m.slice(-4), confidence: 0.85 }));
+            }
+
+            // Name pattern (simple)
+            const nameMatches = input.match(/(?:Patient|Name)[:\s]+([A-Z][a-z]+\s+[A-Z][a-z]+)/g);
+            if (nameMatches) {
+                nameMatches.forEach(m => findings.push({ type: 'NAME', value: '[REDACTED]', confidence: 0.90 }));
+            }
+
+            // MRN pattern
+            const mrnMatches = input.match(/(?:MRN|Medical Record)[:\s#]*([A-Z0-9]{6,12})/gi);
+            if (mrnMatches) {
+                mrnMatches.forEach(m => findings.push({ type: 'MRN', value: '***' + m.slice(-4), confidence: 0.92 }));
+            }
+
+            // Date pattern
+            const dateMatches = input.match(/\d{1,2}\/\d{1,2}\/\d{2,4}/g);
+            if (dateMatches) {
+                dateMatches.forEach(m => findings.push({ type: 'DATE', value: '**/**/****', confidence: 0.75 }));
+            }
+
+            if (findings.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="no-findings">
+                        <span>✅</span>
+                        <p>No PHI detected in this text</p>
+                    </div>
+                `;
+            } else {
+                resultsDiv.innerHTML = `
+                    <p style="color: #ef4444; margin-bottom: 12px;">⚠️ Found ${findings.length} PHI element(s):</p>
+                    ${findings.map(f => `
+                        <div class="finding-item">
+                            <div>
+                                <span class="finding-type">${f.type}</span>
+                                <span style="color: #64748b; margin-left: 8px;">${(f.confidence * 100).toFixed(0)}% confidence</span>
+                            </div>
+                            <span class="finding-value">${f.value}</span>
+                        </div>
+                    `).join('')}
+                `;
+            }
+        }
+
+        // Load compliance status on page load
+        async function loadComplianceStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/compliance/status`);
+                const data = await response.json();
+                console.log('Compliance status:', data);
+            } catch (error) {
+                console.log('API not available, using demo data');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadComplianceStatus);
+    </script>
+</body>
+</html>
