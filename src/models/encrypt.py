@@ -1,12 +1,13 @@
 """Encryption Models"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class EncryptRequest(BaseModel):
     """Request to encrypt data"""
+
     data: Dict[str, Any] = Field(..., description="Data containing fields to encrypt")
     fields: List[str] = Field(..., description="Field paths to encrypt")
     reference_id: Optional[str] = None
@@ -15,44 +16,60 @@ class EncryptRequest(BaseModel):
 
 class EncryptResult(BaseModel):
     """Result of encryption operation"""
-    reference_id: Optional[str]
+
+    reference_id: Optional[str] = None
     encrypted_data: Dict[str, Any]
     key_id: str
     algorithm: str
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "reference_id": "enc-12345",
                 "encrypted_data": {
                     "patient": {
-                        "ssn": "AQICAHh...encrypted...=="
+                        "ssn": "ENCv1:default-key:...",
                     }
                 },
-                "key_id": "alias/hipaa-key",
-                "algorithm": "AES-256-GCM"
+                "key_id": "default-key",
+                "algorithm": "AES-256-GCM",
             }
         }
+    )
 
 
 class DecryptRequest(BaseModel):
     """Request to decrypt data"""
+
     data: Dict[str, Any] = Field(..., description="Data containing encrypted fields")
     fields: List[str] = Field(..., description="Field paths to decrypt")
-    key_id: str = Field(..., description="KMS key ID used for encryption")
+    key_id: Optional[str] = Field(
+        default=None,
+        description="Key ID used for encryption (auto-detected from envelope if omitted)",
+    )
     reference_id: Optional[str] = None
     user_id: Optional[str] = None
 
 
 class KeyRotationRequest(BaseModel):
     """Request to rotate encryption keys"""
+
     old_key_id: str = Field(..., description="Current key to rotate from")
-    scope: Optional[str] = Field(None, description="Scope of rotation (all, resource_type)")
+    scope: Optional[str] = Field(None, description="Scope of rotation (all, vault, records)")
+    records: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Optional records to re-encrypt during rotation",
+    )
+    fields: Optional[List[str]] = Field(
+        default=None,
+        description="Fields in records to re-encrypt",
+    )
     user_id: Optional[str] = None
 
 
 class EncryptionKey(BaseModel):
     """Encryption key metadata"""
+
     key_id: str
     alias: str
     algorithm: str
@@ -64,6 +81,7 @@ class EncryptionKey(BaseModel):
 
 class KeyPolicy(BaseModel):
     """Key usage policy"""
+
     key_id: str
     allowed_users: List[str]
     allowed_roles: List[str]

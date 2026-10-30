@@ -1,0 +1,101 @@
+# HIPAA Compliance Engine Configuration
+phi_detection:
+  enabled: true
+  confidence_threshold: 0.80
+  categories:
+    - name
+    - ssn
+    - medical_record_number
+    - health_plan_id
+    - account_number
+    - date_of_birth
+    - admission_date
+    - discharge_date
+    - phone_number
+    - fax_number
+    - email
+    - address
+    - zip_code
+    - ip_address
+    - device_identifier
+    - url
+    - biometric
+    - photo
+    - diagnosis_code
+    - procedure_code
+
+masking:
+  default_strategy: redact
+  safe_harbor_age_cap: 89
+  restricted_zip_prefixes:
+    - "036"
+    - "059"
+    - "063"
+    - "102"
+    - "203"
+    - "556"
+    - "692"
+    - "790"
+    - "821"
+    - "823"
+    - "830"
+    - "831"
+    - "878"
+    - "879"
+    - "884"
+    - "890"
+    - "893"
+  field_strategies:
+    ssn: hash
+    social_security: hash
+    name: redact
+    first_name: redact
+    last_name: redact
+    dob: generalize
+    date_of_birth: generalize
+    age: generalize
+    zip: generalize
+    zip_code: generalize
+    mrn: tokenize
+    medical_record_number: tokenize
+    patient_id: tokenize
+    email: redact
+    phone: redact
+
+encryption:
+  algorithm: AES-256-GCM
+  kms_key_id: alias/hipaa-compliance-key
+  key_rotation_days: 90
+
+audit:
+  enabled: true
+  retention_days: 2555  # 7 years per HIPAA 45 CFR 164.530(j)
+  hash_chaining: true
+  destination: s3://hipaa-audit-logs-bucket/
+
+access_control:
+  session_timeout_minutes: 30
+  require_mfa_for_phi: true
+  roles:
+    admin:
+      - scan
+      - mask
+      - unmask
+      - encrypt
+      - decrypt
+      - rotate_key
+      - audit_read
+      - compliance_write
+    compliance_officer:
+      - scan
+      - mask
+      - audit_read
+      - compliance_write
+    clinician:
+      - scan
+      - mask
+      - unmask
+      - encrypt
+      - decrypt
+    auditor:
+      - audit_read

@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=sqlite:///./hipaa_compliance.db
+      - AUDIT_LOG_RETENTION_DAYS=2555
+    volumes:
+      - hipaa_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  hipaa_data:

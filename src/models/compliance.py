@@ -1,13 +1,14 @@
 """Compliance Models"""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, Field
 
 
 class ComplianceStatus(str, Enum):
     """Compliance check status"""
+
     COMPLIANT = "compliant"
     NON_COMPLIANT = "non_compliant"
     PARTIAL = "partial"
@@ -16,6 +17,7 @@ class ComplianceStatus(str, Enum):
 
 class Severity(str, Enum):
     """Violation severity"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -24,9 +26,10 @@ class Severity(str, Enum):
 
 class ComplianceCheck(BaseModel):
     """Result of a compliance check"""
+
     check_id: str
     resource_type: str
-    resource_id: Optional[str]
+    resource_id: Optional[str] = None
     checks_performed: List[str]
     status: ComplianceStatus
     score: float = Field(ge=0, le=100)
@@ -39,10 +42,11 @@ class ComplianceCheck(BaseModel):
 
 class ComplianceViolation(BaseModel):
     """Compliance violation record"""
+
     violation_id: str
     detected_at: datetime
     resource_type: str
-    resource_id: Optional[str]
+    resource_id: Optional[str] = None
     policy_id: str
     policy_name: str
     severity: Severity
@@ -56,6 +60,7 @@ class ComplianceViolation(BaseModel):
 
 class ComplianceReport(BaseModel):
     """HIPAA compliance report"""
+
     report_id: str
     generated_at: datetime
     period: str
@@ -73,11 +78,12 @@ class ComplianceReport(BaseModel):
 
 class Policy(BaseModel):
     """Compliance policy definition"""
+
     policy_id: str
     name: str
     description: str
     category: str  # access_control, audit, encryption, etc.
-    hipaa_reference: Optional[str]  # e.g., "164.312(a)(1)"
+    hipaa_reference: Optional[str] = None  # e.g., "164.312(a)(1)"
     severity: Severity
     rules: List[Dict[str, Any]]
     enabled: bool = True
@@ -87,6 +93,7 @@ class Policy(BaseModel):
 
 class PolicyValidation(BaseModel):
     """Result of policy validation"""
+
     policy_id: str
     policy_name: str
     status: ComplianceStatus
@@ -96,6 +103,7 @@ class PolicyValidation(BaseModel):
 
 class HIPAARequirement(BaseModel):
     """HIPAA requirement definition"""
+
     requirement_id: str  # e.g., "164.312(a)(1)"
     name: str
     description: str
